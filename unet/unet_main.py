@@ -1,7 +1,4 @@
 
-#### 4. unet/unet_main.py
-```python
-# Training framework
 import torch
 import torch.nn as nn
 import torch.optim as optim
