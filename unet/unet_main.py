@@ -6,6 +6,123 @@ from tqdm import tqdm
 import time
 import os
 
+
+class Unet_ModelConfig:
+    def __init__(self,
+                 model_size='base',
+                 input_dim=21,
+                 output_channels=2):
+                     
+        self.input_dim = input_dim
+        self.output_channels = output_channels
+
+        self.fc_layers = {
+            'tiny': {
+                'hidden_dims': [128, 256],
+                'output_shape': (32, 32)
+            },
+            'base': {
+                'hidden_dims': [256, 512, 1024],
+                'output_shape': (64, 64)
+            }
+        }[model_size]
+
+        self.encoder_channels = {
+            'tiny': [4, 8, 16],
+            'base': [4, 8, 16, 32]
+        }[model_size]
+
+        self.decoder_channels = {
+            'tiny': [8, 4],
+            'base': [16, 8, 4]
+        }[model_size]
+
+        self.activation = nn.ReLU
+        self.norm_layer = nn.BatchNorm2d
+        self.dropout = 0.2
+        self.pooling = nn.MaxPool2d(2)
+
+
+class ResidualBlock(nn.Module):
+    def __init__(self, channels):
+        super().__init__()
+        self.conv = nn.Sequential(
+            nn.Conv2d(channels, channels, 3, padding=1),
+            nn.BatchNorm2d(channels),
+            nn.LeakyReLU(0.2),
+            nn.Conv2d(channels, channels, 3, padding=1),
+            nn.BatchNorm2d(channels)
+        )
+
+    def forward(self, x):
+        return x + self.conv(x)
+
+
+class UNet(nn.Module):
+    """Base UNet architecture for initial head shape prediction"""
+    def __init__(self, config):
+        super().__init__()
+        self.config = config
+        channels = config['channels']  # e.g., [64, 128, 256, 512]
+        
+        # Encoder
+        self.encoder = nn.ModuleList()
+        self.encoder.append(self._conv_block(2, channels[0]))  # Input: (2,21,51)
+        for i in range(1, len(channels)):
+            self.encoder.append(self._conv_block(channels[i-1], channels[i]))
+            self.encoder.append(nn.MaxPool2d(2))
+        
+        # Bottleneck
+        self.bottleneck = self._conv_block(channels[-1], channels[-1] * 2)
+        
+        # Decoder
+        self.decoder = nn.ModuleList()
+        for i in reversed(range(len(channels))):
+            self.decoder.append(nn.ConvTranspose2d(
+                channels[i] * 2, channels[i], kernel_size=2, stride=2
+            ))
+            self.decoder.append(self._conv_block(channels[i] * 2, channels[i]))
+        
+        # Final output
+        self.final_conv = nn.Conv2d(channels[0], 2, kernel_size=1)  # Output: (2,21,51)
+
+    def _conv_block(self, in_channels, out_channels):
+        """Basic convolutional block: Conv -> BN -> ReLU (x2)"""
+        return nn.Sequential(
+            nn.Conv2d(in_channels, out_channels, kernel_size=3, padding=1),
+            nn.BatchNorm2d(out_channels),
+            nn.ReLU(inplace=True),
+            nn.Conv2d(out_channels, out_channels, kernel_size=3, padding=1),
+            nn.BatchNorm2d(out_channels),
+            nn.ReLU(inplace=True)
+        )
+
+    def forward(self, x):
+        # Encoder with skip connections
+        skips = []
+        for layer in self.encoder:
+            if isinstance(layer, nn.MaxPool2d):
+                x = layer(x)
+            else:
+                x = layer(x)
+                skips.append(x)
+        
+        # Bottleneck
+        x = self.bottleneck(x)
+        
+        # Decoder with skip connections
+        skip_idx = len(skips) - 1
+        for i, layer in enumerate(self.decoder):
+            if isinstance(layer, nn.ConvTranspose2d):
+                x = layer(x)
+            else:
+                x = torch.cat([x, skips[skip_idx]], dim=1)
+                x = layer(x)
+                skip_idx -= 1
+        
+        return self.final_conv(x)
+
+
 class UNetTrainer:
     def __init__(self, config, model_config):
         self.config = config
@@ -40,6 +157,9 @@ class UNetTrainer:
 
         # Logging
         self.writer = SummaryWriter(log_dir=config['log_dir'])
+
+        # Create save directory if not exists
+        os.makedirs(config['save_dir'], exist_ok=True)
 
     def _init_model(self):
         model = UNet(self.model_config)
@@ -174,7 +294,7 @@ class UNetTrainer:
     @classmethod
     def load_model(cls, config, model_config, checkpoint_path):
         trainer = cls(config, model_config)
-        checkpoint = torch.load(checkpoint_path)
+        checkpoint = torch.load(checkpoint_path, map_location=trainer.device)
         if isinstance(trainer.model, nn.DataParallel):
             trainer.model.module.load_state_dict(checkpoint['model_state'])
         else:
