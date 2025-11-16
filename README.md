@@ -23,3 +23,30 @@ This project implements a cascade model that combines UNet and Diffusion Model t
 Install dependencies:
 ```bash
 pip install -r requirements.txt
+```
+## Usage
+Training
+```bash
+python main.py --mode train
+```
+Testing
+```bash
+python main.py --mode test
+```
+Visualization
+```bash
+python main.py --mode visualize_denoise_process
+```
+## Configuration
+You can modify the configuration parameters in main.py to adjust:
+- Device settings (CPU/GPU, multi-GPU)
+- Model hyperparameters
+- Training settings (batch size, epochs, learning rate)
+- Loss function selection
+- Checkpoint and logging settings
+## Results
+The model outputs predictions in .pth format, which include:
+- Predicted head shapes
+- Input features
+- Ground truth targets
+- Additional metadata for post-processing
