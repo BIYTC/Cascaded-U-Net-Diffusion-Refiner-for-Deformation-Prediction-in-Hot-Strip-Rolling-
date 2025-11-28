@@ -1,0 +1,429 @@
+finish
+/clear
+/NOPR
+/PREP7
+! Define rolling parameters
+angle_velocity=10
+sheet_length=1.5
+Sheet_height = 50.214
+Sheet_width = 1896.948
+R1 = 999.390
+edging_draught = 62.975
+horizontal_reduction_rate = 0.439
+Vrate = 1.125
+sheet_velocity=angle_velocity*R1/Vrate/1000
+SSCY1 = 0.784
+SSCY2 = 3.260
+SSCY3 = 8.288
+SSCY4 = 8.300
+SSCY5 = 1.473
+SSCY6 = 4.978
+SSCY7 = 1.794
+SSCX1=0
+SSCX2 = 553.553
+SSCX3 = 1417.998
+SSCX4=1600.00
+SSCX5=0
+SSCX6 = 255.122
+SSCX7=1600.00
+temperature = 1180.018
+friction_coefficient = 0.367
+AWD = 0.267
+RGD_LEFT = 0.930
+RGD_RIGHT = 0.931
+RGD=1
+mass_scaling_factor=100
+AWD_real=AWD/1000
+t=(0.5+sheet_length+5+R1/1000+2)/sheet_velocity
+Sheet_height_real=Sheet_height/1000
+Sheet_width_real=Sheet_width/1000
+Roller_length=Sheet_width_real+1
+edging_draught_real=edging_draught/1000
+vertical_roller_radiusE1=R1/1000
+honrizontal_roller_radiusR1=R1/1000
+vertical_linear_velocity1=angle_velocity*R1/1000
+horizontal_linear_velocity1=angle_velocity*R1/1000
+
+
+ssc=1!SSC on (1) off (0)
+e0=(2*horizontal_linear_velocity1*sqrt(Sheet_height_real*honrizontal_reduction_rate))/(2*Sheet_height_real-Sheet_height_real*honrizontal_reduction_rate)! Actual equivalent plastic strain rate
+e*=e0/0.001
+e1=LN(1/(1-honrizontal_reduction_rate))
+sigma_y=3.46*(10**8)+(2.4*(10**7)*exp(0.0028+0.0015*LN(e*)))+1.9*(10**8)*(e1**0.289)
+Emodulus=2.1*(10**11)*(1/(1+79.853*exp(-5802.26/(temperature+273))))*exp(-40.1*9.5412*10**(-6)*(1+0.00051062*(temperature+273)/2)*(temperature+273))! Relationship between elastic modulus and temperature
+density=8032.4-0.5008*temperature! Relationship between material density and temperature
+poratio=0.00004*temperature+0.3058
+density_sheet=density*mass_scaling_factor
+density_rolls=7850*mass_scaling_factor
+ET,1,SOLID164  ! Define element type
+! Define the material properties of workpiece
+MP,DENS,1,density_sheet
+MP,EX,1,Emodulus  
+MP,NUXY,1,poratio 
+TB,BISO,1,,,,    
+TBDAT,1,sigma_y   
+TBDAT,2,sigma_y*3  
+! Define the attributes of the right vertical roller E1
+EDMP,RIGI,2,4,6 ! Stiffness is set to 7, stiffness direction is 6
+MP,DENS,2,density_rolls! Density setting
+MP,EX,2,2.1E11  ! Material elastic modulus setting
+MP,NUXY,2,0.3   ! Poisson's ratio setting
+! Define the material properties of the left vertical roller E1
+EDMP,RIGI,3,4,6 
+MP,DENS,3,density_rolls
+MP,EX,3,2.1E+011
+MP,NUXY,3,0.3   
+! Define the material properties of the upper horizontal roller on R1
+EDMP,RIGI,4,7,4 
+MP,DENS,4,density_rolls
+MP,EX,4,2.1E+011
+MP,NUXY,4,0.3   
+! Define the material properties of the lower horizontal roller on R1
+EDMP,RIGI,5,7,4
+MP,DENS,5,density_rolls
+MP,EX,5,2.1E11  
+MP,NUXY,5,0.3
+! Create a semi-thickness, full-width workpiece
+K, ,-0.5,(Sheet_height_real+AWD_real)/2,-Sheet_width_real/2,
+K, ,-0.5,0,-Sheet_width_real/2,
+K, ,-0.5,Sheet_height_real/2,Sheet_width_real/2,
+K, ,-0.5,0,Sheet_width_real/2,
+
+FLST,2,4,3  
+FITEM,2,1   
+FITEM,2,2   
+FITEM,2,4   
+FITEM,2,3   
+A,P51X  
+FLST,2,1,5,ORDE,1   
+FITEM,2,1   
+VEXT,P51X, , ,-sheet_length,0,0,,,,
+
+
+!Create rollers
+!E1
+K, ,0,-0.5,Sheet_width_real/2+R1/1000-edging_draught_real/2, 
+K, ,0,-0.5,Sheet_width_real/2+R1*2/1000-edging_draught_real/2,   
+K, ,0,0.5,Sheet_width_real/2+R1*2/1000-edging_draught_real/2,
+K, ,0,0.5,Sheet_width_real/2+R1/1000-edging_draught_real/2,  
+
+!R1 
+K, ,5,Sheet_height_real/2*((1-honrizontal_reduction_rate))+R1/1000,-Roller_length/2,
+K, ,5,Sheet_height_real/2*((1-honrizontal_reduction_rate)*RGD_LEFT)+R1*2/1000,-Roller_length/2,  
+K, ,5,Sheet_height_real/2*((1-honrizontal_reduction_rate)*RGD_RIGHT)+R1*2/1000,Roller_length/2,
+K, ,5,Sheet_height_real/2*((1-honrizontal_reduction_rate))+R1/1000,Roller_length/2,  
+
+FLST,2,4,3  
+FITEM,2,11  
+FITEM,2,12  
+FITEM,2,9   
+FITEM,2,10  
+A,P51X  
+FLST,2,4,3  
+FITEM,2,14  
+FITEM,2,13  
+FITEM,2,16  
+FITEM,2,15  
+A,P51X  
+FLST,2,1,5,ORDE,1   
+FITEM,2,7   
+FLST,8,2,3  
+FITEM,8,12  
+FITEM,8,9   
+VROTAT,P51X, , , , , ,P51X, ,360, , 
+FLST,2,1,5,ORDE,1   
+FITEM,2,8   
+FLST,8,2,3  
+FITEM,8,13  
+FITEM,8,16  
+VROTAT,P51X, , , , , ,P51X, ,360, , 
+
+FLST,3,4,6,ORDE,2   
+FITEM,3,2   
+FITEM,3,-5  
+VSYMM,Z,P51X, , , ,0,0  
+FLST,2,4,6,ORDE,2   
+FITEM,2,10  
+FITEM,2,-13 
+VGLUE,P51X  
+FLST,2,4,6,ORDE,2   
+FITEM,2,2   
+FITEM,2,-5  
+VGLUE,P51X  
+
+
+! Assign material properties to each entity
+CM,_Y,VOLU  
+VSEL, , , ,       1 
+CM,_Y1,VOLU 
+CMSEL,S,_Y  
+!*  
+CMSEL,S,_Y1 
+VATT,       1, ,   1,       0   
+CMSEL,S,_Y  
+CMDELE,_Y   
+CMDELE,_Y1  
+
+FLST,5,4,6,ORDE,2   
+FITEM,5,10  
+FITEM,5,-13 
+CM,_Y,VOLU  
+VSEL, , , ,P51X 
+CM,_Y1,VOLU 
+CMSEL,S,_Y  
+!*  
+CMSEL,S,_Y1 
+VATT,       2, ,   1,       0   
+CMSEL,S,_Y  
+CMDELE,_Y   
+CMDELE,_Y1  
+ 
+FLST,5,4,6,ORDE,2   
+FITEM,5,2   
+FITEM,5,-5  
+CM,_Y,VOLU  
+VSEL, , , ,P51X 
+CM,_Y1,VOLU 
+CMSEL,S,_Y  
+!*  
+CMSEL,S,_Y1 
+VATT,       3, ,   1,       0   
+CMSEL,S,_Y  
+CMDELE,_Y   
+CMDELE,_Y1  
+!*  
+FLST,5,4,6,ORDE,2   
+FITEM,5,6   
+FITEM,5,-9  
+CM,_Y,VOLU  
+VSEL, , , ,P51X 
+CM,_Y1,VOLU 
+CMSEL,S,_Y  
+!*  
+CMSEL,S,_Y1 
+VATT,       4, ,   1,       0   
+CMSEL,S,_Y  
+CMDELE,_Y   
+CMDELE,_Y1  
+!*  
+
+
+! Divide the mesh
+FLST,5,1,4,ORDE,1   
+FITEM,5,4   
+CM,_Y,LINE  
+LSEL, , , ,P51X 
+CM,_Y1,LINE 
+CMSEL,,_Y   
+!*  
+LESIZE,_Y1, , ,20, , , , ,1 
+!*  
+FLST,5,1,4,ORDE,1   
+FITEM,5,11  
+CM,_Y,LINE  
+LSEL, , , ,P51X 
+CM,_Y1,LINE 
+CMSEL,,_Y   
+!*  
+LESIZE,_Y1, , ,50, , , , ,1
+!*   
+FLST,5,1,4,ORDE,1   
+FITEM,5,1   
+CM,_Y,LINE  
+LSEL, , , ,P51X 
+CM,_Y1,LINE 
+CMSEL,,_Y   
+!*  
+LESIZE,_Y1, , ,4, , , , ,1 
+!*   
+FLST,5,18,4,ORDE,18 
+FITEM,5,13  
+FITEM,5,16  
+FITEM,5,19  
+FITEM,5,24  
+FITEM,5,29  
+FITEM,5,34  
+FITEM,5,36  
+FITEM,5,42  
+FITEM,5,47  
+FITEM,5,50  
+FITEM,5,52  
+FITEM,5,54  
+FITEM,5,-55 
+FITEM,5,64  
+FITEM,5,-65 
+FITEM,5,68  
+FITEM,5,-69 
+FITEM,5,74  
+CM,_Y,LINE  
+LSEL, , , ,P51X 
+CM,_Y1,LINE 
+CMSEL,,_Y   
+!*  
+LESIZE,_Y1,0.1, , , , , , ,1   
+!*  
+MSHAPE,0,3D 
+MSHKEY,1
+!*  
+FLST,5,13,6,ORDE,2  
+FITEM,5,1   
+FITEM,5,-13 
+CM,_Y,VOLU  
+VSEL, , , ,P51X 
+CM,_Y1,VOLU 
+CHKMSH,'VOLU'   
+CMSEL,S,_Y  
+!*  
+VMESH,_Y1   
+!*  
+CMDELE,_Y   
+CMDELE,_Y1  
+CMDELE,_Y2  
+
+! Define contact
+EDPART,CREATE
+EDCGEN,ASTS,       1,       2,friction_coefficient,friction_coefficient*0.7,0,0,0, , , , ,0,10000000,0,0
+EDCGEN,ASTS,       1,       3,friction_coefficient,friction_coefficient*0.7,0,0,0, , , , ,0,10000000,0,0
+EDCGEN,ASTS,       1,       4,friction_coefficient,friction_coefficient*0.7,0,0,0, , , , ,0,10000000,0,0
+
+! Perform naming of workpiece entities
+VSEL,S, , ,       1 
+ALLSEL,BELOW,VOLU   
+FLST,5,56661,1,ORDE,2   
+FITEM,5,1   
+FITEM,5,-56661  
+NSEL,R, , ,P51X 
+CM,sheet,NODE   
+ALLSEL,ALL  
+
+
+! Create constraints
+VSEL,S, , ,       1 
+ALLSEL,BELOW,VOLU   
+ 
+NSEL,R,LOC,Y,0  
+FLST,2,1071,1,ORDE,10   
+FITEM,2,2   
+FITEM,2,6   
+FITEM,2,-25 
+FITEM,2,107 
+FITEM,2,111 
+FITEM,2,-130
+FITEM,2,211 
+FITEM,2,-259
+FITEM,2,456 
+FITEM,2,-1435   
+!*  
+/GO 
+D,P51X, ,0, , , ,UY, , , , ,
+ALLSEL,ALL  
+
+! Prepare parameters before loading
+*DIM,time,ARRAY,2,1,1, , ,  
+*DIM,v2_2,ARRAY,2,1,1, , ,
+*DIM,ssc_draught1_2,ARRAY,7,1,1, , ,
+*DIM,v2,ARRAY,2,1,1, , ,
+*DIM,v3,ARRAY,2,1,1, , ,
+*DIM,ssc_time1,ARRAY,7,1,1, , , 
+*DIM,ssc_draught1,ARRAY,7,1,1, , ,  
+*SET,TIME(1,1,1) , 0   
+*SET,TIME(2,1,1) , 20   
+*SET,V2(1,1,1) , -angle_velocity
+*SET,V2(2,1,1) , -angle_velocity
+*SET,V2_2(1,1,1) , angle_velocity
+*SET,V2_2(2,1,1) , angle_velocity
+*SET,V3(1,1,1) , angle_velocity
+*SET,V3(2,1,1) , angle_velocity
+*SET,SSC_DRAUGHT1(1,1,1) , -(SSCY1)/1000*ssc   
+*SET,SSC_DRAUGHT1(2,1,1) , -(SSCY2)/1000*ssc   
+*SET,SSC_DRAUGHT1(3,1,1) , -(SSCY3)/1000*ssc   
+*SET,SSC_DRAUGHT1(4,1,1) , -(SSCY4)/1000*ssc
+*SET,SSC_DRAUGHT1(5,1,1) , -(SSCY5)/1000*ssc   
+*SET,SSC_DRAUGHT1(6,1,1) , -(SSCY6)/1000*ssc   
+*SET,SSC_DRAUGHT1(7,1,1) , -(SSCY7)/1000*ssc   
+*SET,SSC_DRAUGHT1_2(1,1,1) , (SSCY1)/1000*ssc   
+*SET,SSC_DRAUGHT1_2(2,1,1) , (SSCY2)/1000*ssc   
+*SET,SSC_DRAUGHT1_2(3,1,1) , (SSCY3)/1000*ssc   
+*SET,SSC_DRAUGHT1_2(4,1,1) , (SSCY4)/1000*ssc
+*SET,SSC_DRAUGHT1_2(5,1,1) , (SSCY5)/1000*ssc   
+*SET,SSC_DRAUGHT1_2(6,1,1) , (SSCY6)/1000*ssc   
+*SET,SSC_DRAUGHT1_2(7,1,1) , (SSCY7)/1000*ssc  
+*SET,SSC_TIME1(1,1,1) , SSCX1
+*SET,SSC_TIME1(2,1,1) , (SSCX2/1000+0.5)/(sheet_velocity)
+*SET,SSC_TIME1(3,1,1) , (SSCX3/1000+0.5)/(sheet_velocity)
+*SET,SSC_TIME1(4,1,1) , (SSCX4/1000+0.5)/(sheet_velocity)  
+*SET,SSC_TIME1(5,1,1) , ((2400+SSCX5)/1000+0.5)/(sheet_velocity) 
+*SET,SSC_TIME1(6,1,1) , ((2400+SSCX6)/1000+0.5)/(sheet_velocity)
+*SET,SSC_TIME1(7,1,1) , ((2400+SSCX7)/1000+0.5)/(sheet_velocity)
+! Loading
+EDVE,VELO,SHEET,sheet_velocity,0,0,0,0,0, , , , , ,
+EDLOAD,ADD,RBUZ,0,       4,ssc_time1,SSC_DRAUGHT1_2, 0, , , , , 
+EDLOAD,ADD,RBOY,0,       4,TIME,V2_2, 0, , , , ,  
+EDLOAD,ADD,RBUZ,0,       2,ssc_time1,SSC_DRAUGHT1, 0, , , , , 
+EDLOAD,ADD,RBOY,0,       2,TIME,V2, 0, , , , , 
+EDLOAD,ADD,RBOZ,0,       3,TIME,V3, 0, , , , ,  
+FINISH
+! End pre-processing and start setting up the solution
+ALLSEL,ALL  
+/SOLU   
+EDHGLS,0.10, 
+EDENERGY,1,1,1,1
+TIME,t, 
+EDCTS,-5.8e-007,0.9,
+EDOPT,ADD,blank,ANSYS
+EDRST,50,  
+EDHTIME,1000,   
+EDDUMP,1,    
+EDHIST,SHEET
+EDOUT,RCFORC
+EDOUT,NODOUT
+ALLSEL,ALL 
+EDWRITE,LSDYNA, , , 
+
+/STATUS,SOLU
+SOLVE 
+FINISH 
+ALLSEL,ALL  
+! Solution completed, proceeding to post-processing.
+
+/POST1
+! Extract the displacement data of each node on the neutral surface of the workpiece before and after rolling.
+ALLSEL,ALL  
+VSEL,S, , ,       1 
+ALLSEL,BELOW,VOLU  
+NSEL,R,LOC,Y,0
+*get, num_selected_mid, nsel, count
+*vget,mid_nodelist_nodelist,node,nsel,nlist 
+*DIM,disp_side,array,num_selected_mid,3 
+*DIM,loc0_side,array,num_selected_mid,3 
+*DIM,loc1_side,array,num_selected_mid,3 
+*DIM,movement,array,num_selected_mid,1 
+SET,LAST
+*DO, j,1,num_selected_mid,1
+*get,loc0_side(j,1),node,mid_nodelist_nodelist(j),loc,x
+*get,loc0_side(j,2),node,mid_nodelist_nodelist(j),loc,y
+*get,loc0_side(j,3),node,mid_nodelist_nodelist(j),loc,z
+*get,disp_side(j,1),node,mid_nodelist_nodelist(j),u,x
+*get,disp_side(j,2),node,mid_nodelist_nodelist(j),u,y
+*get,disp_side(j,3),node,mid_nodelist_nodelist(j),u,z
+loc1_side(j,1)=loc0_side(j,1)+disp_side(j,1) 
+loc1_side(j,2)=loc0_side(j,2)+disp_side(j,2) 
+loc1_side(j,3)=loc0_side(j,3)+disp_side(j,3) 
+*ENDDO
+*cfopen,SHEET_mid,txt,,APPEND
+*vwrite
+('nodenum   mid_sx           mid_sy           mid_ sz        nodenum   mid_ex            mid_ey            mid_ez         ')
+*do,i,1,num_selected_mid
+as0=mid_nodelist_nodelist(i)
+asx=loc0_side(i,1)
+asy=loc0_side(i,2)
+asz=loc0_side(i,3)
+au0=mid_nodelist_nodelist(i)
+aux=loc1_side(i,1)
+auy=loc1_side(i,2)
+auz=loc1_side(i,3)
+*vwrite,as0,asx,asy,asz,au0,aux,auy,auz
+(1F7.0,1E15.6,1E15.6,1E15.6,1F7.0,1E15.6,1E15.6,1E15.6)
+*enddo
+*cfc
+
