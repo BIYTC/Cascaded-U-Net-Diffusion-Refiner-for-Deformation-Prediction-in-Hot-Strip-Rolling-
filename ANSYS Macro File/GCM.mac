@@ -4,37 +4,30 @@ finish
 /PREP7
 ! Define rolling parameters
 angle_velocity=10
-sheet_length=1.5
-Sheet_height = 50.214
-Sheet_width = 1896.948
-R1 = 999.390
-edging_draught = 62.975
-horizontal_reduction_rate = 0.439
-Vrate = 1.125
+sheet_length=1.6
+Sheet_height = 195.872
+Sheet_width = 2068.120
+R1 = 630.667
+edging_draught = 21.770
+horizontal_reduction_rate = 0.218
+Vrate = 1.071
 sheet_velocity=angle_velocity*R1/Vrate/1000
-SSCY1 = 0.784
-SSCY2 = 3.260
-SSCY3 = 8.288
-SSCY4 = 8.300
-SSCY5 = 1.473
-SSCY6 = 4.978
-SSCY7 = 1.794
+SSCY1 = 7.103
+SSCY2 = 5.264
+SSCY3 = 0.024
+SSCY4 = 5.061
 SSCX1=0
-SSCX2 = 553.553
-SSCX3 = 1417.998
+SSCX2 = 128.080
+SSCX3 = 1321.962
 SSCX4=1600.00
-SSCX5=0
-SSCX6 = 255.122
-SSCX7=1600.00
-temperature = 1180.018
-friction_coefficient = 0.367
-AWD = 0.267
-RGD_LEFT = 0.930
-RGD_RIGHT = 0.931
-RGD=1
-mass_scaling_factor=100
+temperature = 1094.515
+friction_coefficient = 0.212
+AWD = 0.936
+RGD_LEFT = 0.987
+RGD_RIGHT = 0.925
 mesh_density_x = -5.482
 mesh_density_y = -3.705
+mass_scaling_factor=100
 AWD_real=AWD/1000
 t=(0.5+sheet_length+5+R1/1000+2)/sheet_velocity
 Sheet_height_real=Sheet_height/1000
@@ -48,10 +41,11 @@ horizontal_linear_velocity1=angle_velocity*R1/1000
 
 
 ssc=1!SSC on (1) off (0)
-e0=(2*horizontal_linear_velocity1*sqrt(Sheet_height_real*honrizontal_reduction_rate))/(2*Sheet_height_real-Sheet_height_real*honrizontal_reduction_rate)! Actual equivalent plastic strain rate
-e*=e0/0.001
-e1=LN(1/(1-honrizontal_reduction_rate))
-sigma_y=3.46*(10**8)+(2.4*(10**7)*exp(0.0028+0.0015*LN(e*)))+1.9*(10**8)*(e1**0.289)
+e0=(2*horizontal_linear_velocity1*sqrt(Sheet_height_real*horizontal_reduction_rate))/(2*Sheet_height_real-Sheet_height_real*horizontal_reduction_rate)! Actual equivalent plastic strain rate
+e_xing=e0/0.001
+e1=((1/(1-horizontal_reduction_rate))-1)-(((1/(1-horizontal_reduction_rate))-1)**2)/2
+LN_e_xing=(e_xing-1)-((e_xing-1)**2)/2
+sigma_y=3.46*(10**8)+(2.4*(10**7)*exp(0.0028+0.0015*LN_e_xing))+1.9*(10**8)*(e1**0.289)
 Emodulus=2.1*(10**11)*(1/(1+79.853*exp(-5802.26/(temperature+273))))*exp(-40.1*9.5412*10**(-6)*(1+0.00051062*(temperature+273)/2)*(temperature+273))! Relationship between elastic modulus and temperature
 density=8032.4-0.5008*temperature! Relationship between material density and temperature
 poratio=0.00004*temperature+0.3058
@@ -110,10 +104,10 @@ K, ,0,0.5,Sheet_width_real/2+R1*2/1000-edging_draught_real/2,
 K, ,0,0.5,Sheet_width_real/2+R1/1000-edging_draught_real/2,  
 
 !R1 
-K, ,5,Sheet_height_real/2*((1-honrizontal_reduction_rate))+R1/1000,-Roller_length/2,
-K, ,5,Sheet_height_real/2*((1-honrizontal_reduction_rate)*RGD_LEFT)+R1*2/1000,-Roller_length/2,  
-K, ,5,Sheet_height_real/2*((1-honrizontal_reduction_rate)*RGD_RIGHT)+R1*2/1000,Roller_length/2,
-K, ,5,Sheet_height_real/2*((1-honrizontal_reduction_rate))+R1/1000,Roller_length/2,  
+K, ,5,Sheet_height_real/2*((1-horizontal_reduction_rate))+R1/1000,-Roller_length/2,
+K, ,5,Sheet_height_real/2*((1-horizontal_reduction_rate)*RGD_LEFT)+R1*2/1000,-Roller_length/2,  
+K, ,5,Sheet_height_real/2*((1-horizontal_reduction_rate)*RGD_RIGHT)+R1*2/1000,Roller_length/2,
+K, ,5,Sheet_height_real/2*((1-horizontal_reduction_rate))+R1/1000,Roller_length/2,  
 
 FLST,2,4,3  
 FITEM,2,11  
@@ -227,7 +221,7 @@ LSEL, , , ,P51X
 CM,_Y1,LINE 
 CMSEL,,_Y   
 !*  
-LESIZE,_Y1, , ,31,mesh_density_y, , , ,1
+LESIZE,_Y1, , ,31,mesh_density_x, , , ,1
 !*   
 FLST,5,1,4,ORDE,1   
 FITEM,5,1   
@@ -323,11 +317,11 @@ ALLSEL,ALL
 ! Prepare parameters before loading
 *DIM,time,ARRAY,2,1,1, , ,  
 *DIM,v2_2,ARRAY,2,1,1, , ,
-*DIM,ssc_draught1_2,ARRAY,7,1,1, , ,
+*DIM,ssc_draught1_2,ARRAY,4,1,1, , ,
 *DIM,v2,ARRAY,2,1,1, , ,
 *DIM,v3,ARRAY,2,1,1, , ,
-*DIM,ssc_time1,ARRAY,7,1,1, , , 
-*DIM,ssc_draught1,ARRAY,7,1,1, , ,  
+*DIM,ssc_time1,ARRAY,4,1,1, , , 
+*DIM,ssc_draught1,ARRAY,4,1,1, , ,  
 *SET,TIME(1,1,1) , 0   
 *SET,TIME(2,1,1) , 20   
 *SET,V2(1,1,1) , -angle_velocity
@@ -340,30 +334,21 @@ ALLSEL,ALL
 *SET,SSC_DRAUGHT1(2,1,1) , -(SSCY2)/1000*ssc   
 *SET,SSC_DRAUGHT1(3,1,1) , -(SSCY3)/1000*ssc   
 *SET,SSC_DRAUGHT1(4,1,1) , -(SSCY4)/1000*ssc
-*SET,SSC_DRAUGHT1(5,1,1) , -(SSCY5)/1000*ssc   
-*SET,SSC_DRAUGHT1(6,1,1) , -(SSCY6)/1000*ssc   
-*SET,SSC_DRAUGHT1(7,1,1) , -(SSCY7)/1000*ssc   
 *SET,SSC_DRAUGHT1_2(1,1,1) , (SSCY1)/1000*ssc   
 *SET,SSC_DRAUGHT1_2(2,1,1) , (SSCY2)/1000*ssc   
 *SET,SSC_DRAUGHT1_2(3,1,1) , (SSCY3)/1000*ssc   
-*SET,SSC_DRAUGHT1_2(4,1,1) , (SSCY4)/1000*ssc
-*SET,SSC_DRAUGHT1_2(5,1,1) , (SSCY5)/1000*ssc   
-*SET,SSC_DRAUGHT1_2(6,1,1) , (SSCY6)/1000*ssc   
-*SET,SSC_DRAUGHT1_2(7,1,1) , (SSCY7)/1000*ssc  
+*SET,SSC_DRAUGHT1_2(4,1,1) , (SSCY4)/1000*ssc 
 *SET,SSC_TIME1(1,1,1) , SSCX1
 *SET,SSC_TIME1(2,1,1) , (SSCX2/1000+0.5)/(sheet_velocity)
 *SET,SSC_TIME1(3,1,1) , (SSCX3/1000+0.5)/(sheet_velocity)
 *SET,SSC_TIME1(4,1,1) , (SSCX4/1000+0.5)/(sheet_velocity)  
-*SET,SSC_TIME1(5,1,1) , ((2400+SSCX5)/1000+0.5)/(sheet_velocity) 
-*SET,SSC_TIME1(6,1,1) , ((2400+SSCX6)/1000+0.5)/(sheet_velocity)
-*SET,SSC_TIME1(7,1,1) , ((2400+SSCX7)/1000+0.5)/(sheet_velocity)
 ! Loading
 EDVE,VELO,SHEET,sheet_velocity,0,0,0,0,0, , , , , ,
 EDLOAD,ADD,RBUZ,0,       4,ssc_time1,SSC_DRAUGHT1_2, 0, , , , , 
 EDLOAD,ADD,RBOY,0,       4,TIME,V2_2, 0, , , , ,  
 EDLOAD,ADD,RBUZ,0,       2,ssc_time1,SSC_DRAUGHT1, 0, , , , , 
-EDLOAD,ADD,RBOY,0,       2,TIME,V2, 0, , , , ,  
-EDLOAD,ADD,RBOZ,0,       3,TIME,V3, 0, , , , ,  
+EDLOAD,ADD,RBOY,0,       2,TIME,V2, 0, , , , ,
+EDLOAD,ADD,RBOZ,0,       3,TIME,V3, 0, , , , ,
 
 FINISH
 ! End pre-processing and start setting up the solution
