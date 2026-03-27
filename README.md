@@ -12,6 +12,10 @@ This project implements a cascade model that combines UNet and Diffusion Model t
 - Multi-GPU support
 - Comprehensive logging and visualization tools
 
+## Training and Evaluation of Individual Models
+If you want to investigate the training and testing of standalone Diffusion models or UNet, please refer to[
+U-Net-and-Diffusion-Model-for-Deformation-Prediction-in-Hot-Strip-Rolling](https://github.com/BIYTC/U-Net-and-Diffusion-Model-for-Deformation-Prediction-in-Hot-Strip-Rolling.git).
+
 ## Requirements
 - Python 3.8+
 - PyTorch 1.10+
